@@ -1,5 +1,5 @@
 package com.ecobazaar.ecobazaar;
-//second //third //new
+//second //third 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
