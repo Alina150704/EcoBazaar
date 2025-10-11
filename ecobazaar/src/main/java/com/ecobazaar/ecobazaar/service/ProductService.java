@@ -7,26 +7,29 @@ import org.springframework.stereotype.Service;
 import com.ecobazaar.ecobazaar.model.Product;
 import com.ecobazaar.ecobazaar.repository.ProductRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class ProductService {
     private final ProductRepository productRepository;
 
-    // Constructor injection
+   
     public ProductService(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
 
-    // CREATE
+   
     public Product addProduct(Product product) {
         return productRepository.save(product);
     }
 
-    // READ
+   
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
 
-    // UPDATE
+    
     public Product updateProduct(Long id, Product updatedProduct) {
         return productRepository.findById(id)
                 .map(product -> {
@@ -41,10 +44,20 @@ public class ProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
-    // DELETE
+   
     public void deleteProduct(Long id) {
         productRepository.deleteById(id);
     }
+    public List<Product> getEcoCertifiedProducts() {
+
+    	return productRepository.findByEcoCertifiedTrue();
+
+    	}
+    public List<Product> getEcoCertifiedSortedByCarbonImpact() {
+
+    	return productRepository.findByEcoCertifiedTrueOrderByCarbonImpactAsc();
+
+    	}
 }
 
 

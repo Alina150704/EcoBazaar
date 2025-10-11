@@ -24,7 +24,7 @@ public class Product {
     
     public Product() {}
 
-    // ✅ Constructor with all fields
+    
     public Product(Long id, String name, String details, Double price,
                    Double carbonImpact, Boolean ecoCertified, Long sellerId) {
         this.id = id;
@@ -36,7 +36,7 @@ public class Product {
         this.sellerId = sellerId;
     }
 
-    // ✅ Getters and Setters
+    
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
