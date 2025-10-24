@@ -47,7 +47,7 @@ return orderService.checkout(userId);
 
 public List<Order> getUserOrders(@PathVariable Long userId) {
 
-return orderService.getOrdersByUser(userId);
+return orderService.getOrdersByUserId(userId);
 
 }
 
