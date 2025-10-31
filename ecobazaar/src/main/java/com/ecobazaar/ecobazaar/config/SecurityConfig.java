@@ -1,89 +1,81 @@
-/*package com.ecobazaar.ecobazaar.config;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.SecurityFilterChain;
-
-@Configuration
-public class SecurityConfig {
-
-    @Bean
-    public SecurityFilterChain filterConfig(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
-                .anyRequest().authenticated()
-            );
-
-        return http.build();
-    }
-    
-     @Bean
-     public InMemoryUserDetailsManager userDetailsService() {
-   	UserDetails admin = User.withUsername("admin")
-  			.password("{noop}admin123")
-   			.roles("ADMIN")
-   			.build();
-    	
-  	return new InMemoryUserDetailsManager(admin);
-   }
-}
-*/
 package com.ecobazaar.ecobazaar.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer; // Needed for httpBasic
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity; // Good practice to include
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
+
+import com.ecobazaar.ecobazaar.security.JwtFilter;
 
 @Configuration
-@EnableWebSecurity // Include this annotation
+@EnableMethodSecurity(prePostEnabled = true) // allows @PreAuthorize on controllers
 public class SecurityConfig {
 
+    private final JwtFilter jwtFilter;
+
+    public SecurityConfig(JwtFilter jwtFilter) {
+        this.jwtFilter = jwtFilter;
+    }
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterConfig(HttpSecurity http) throws Exception {
+
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for API usage
+            // ❌ Disable CSRF because we’re building a stateless REST API
+            .csrf(csrf -> csrf.disable())
+
+            // 🧩 Make session stateless (we use JWT, not HTTP sessions)
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            // 🔐 Configure endpoint access rules
             .authorizeHttpRequests(auth -> auth
-                // Allow registration and login without authentication
+
+                // 1️⃣ Public authentication endpoints
                 .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
-                
-                // Set the specific rule for ADMIN to manage products (as requested previously)
-                .requestMatchers("/products", "/products/**").hasRole("ADMIN")
-                
-                // All other requests require any user to be authenticated
+
+                // 2️⃣ ✅ Allow Swagger & OpenAPI endpoints (for docs)
+                .requestMatchers(
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html"
+                ).permitAll()
+
+                // 3️⃣ Public product browsing (GET only)
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+
+                // 4️⃣ Product management -> SELLER or ADMIN
+                .requestMatchers("/api/products/**").hasAnyRole("SELLER", "ADMIN")
+
+                // 5️⃣ Cart / Checkout / Orders -> USER only
+                .requestMatchers("/api/cart/**", "/api/checkout/**", "/api/orders/**")
+                    .hasRole("USER")
+
+                // 6️⃣ Admin endpoints -> ADMIN only
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                // 7️⃣ Everything else requires authentication
                 .anyRequest().authenticated()
             )
-            // IMPORTANT: Add this to enable basic authentication (username/password in header)
-            .httpBasic(Customizer.withDefaults()); 
+
+            // 🔄 Add our custom JWT filter before Spring’s UsernamePasswordAuthenticationFilter
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+
+            // 🚫 Disable default login forms and browser popups
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable());
 
         return http.build();
     }
-    
+
     @Bean
-    public InMemoryUserDetailsManager userDetailsService() {
-        // Define the 'admin' user with the ADMIN role
-        UserDetails admin = User.withUsername("admin")
-            .password("{noop}admin123") // Password is 'admin123'
-            .roles("ADMIN")
-            .build();
-        
-        // Define additional users like 'john' if needed (based on your users table)
-        // UserDetails customer = User.withUsername("john")
-        //     .password("{noop}123456") // Example password
-        //     .roles("CUSTOMER")
-        //     .build();
-        
-        return new InMemoryUserDetailsManager(admin); // , customer);
+    public PasswordEncoder passwordEncoder() {
+        // ✅ Strong password hashing
+        return new BCryptPasswordEncoder();
     }
 }

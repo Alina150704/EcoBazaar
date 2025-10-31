@@ -8,6 +8,7 @@ public class EcobazaarApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(EcobazaarApplication.class, args);
+		
 	}
 
 }
