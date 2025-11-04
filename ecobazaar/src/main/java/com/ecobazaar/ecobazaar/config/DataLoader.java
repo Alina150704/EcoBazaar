@@ -1,6 +1,5 @@
 package com.ecobazaar.ecobazaar.config;
 
-
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +17,7 @@ public class DataLoader {
 		return args->{
 			if(userRepository.findByEmail("admin@ecobazzar.com").isEmpty()) {
 				User admin = new User();
-				admin.setName("Admin");
+				admin.setName("Default_Admin");
 				admin.setEmail("admin@ecobazzar.com");
 				admin.setPassword(encoder.encode("Admin@123"));
 				admin.setRole("ROLE_ADMIN");
